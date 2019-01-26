@@ -1,12 +1,22 @@
 const express = require( 'express' );
+const SocketServer = require( 'ws' ).Server;
 
-const app = express();
 const PORT = process.env.PORT || 8080;
 
-app.listen( PORT, () => {
-  console.log( `Collaborative Drawing Server listening on port ${PORT}` );
+const server = express()
+  // Make the express server serve static assets (html, javascript, css) from the /public folder
+  .use( express.static( 'public' ) )
+  .listen( PORT, '0.0.0.0', 'localhost', () => console.log( `Listening on ${PORT}` ) );
+
+const wss = new SocketServer( {
+  server,
 } );
 
-app.get( '/', ( req, res ) => {
-  console.log( 'Received Request' );
+wss.on( 'connection', ( socket ) => {
+  socket.on( 'message', ( data ) => {
+    wss.clients.forEach( ( client ) => {
+      client.send( data );
+    } );
+  } );
 } );
+
