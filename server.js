@@ -13,6 +13,7 @@ const wss = new SocketServer( {
   server,
 } );
 
+
 wss.on( 'connection', ( socket ) => {
   socket.send( JSON.stringify( { type: 'grid' } ) );
 
@@ -24,23 +25,26 @@ wss.on( 'connection', ( socket ) => {
 
   socket.on( 'message', ( data ) => {
     const parsedData = JSON.parse( data );
-    if ( parsedData.type === 'clear' ) {
-      history = [];
-      wss.clients.forEach( ( client ) => {
-        client.send( JSON.stringify( { type: 'clear' } ) );
-      } );
-    }
-    if ( parsedData.type === 'line' ) {
-      if ( parsedData.data === 'completed' ) {
-        history.push( tempHistory );
-        tempHistory = [];
-      } else {
+    const msgTypeLookup = {
+      clear: () => {
+        history = [];
+        wss.clients.forEach( ( client ) => {
+          client.send( JSON.stringify( { type: 'clear' } ) );
+        } );
+      },
+      line: () => {
         tempHistory.push( parsedData.data );
         wss.clients.forEach( ( client ) => {
           client.send( JSON.stringify( { type: 'line', data: tempHistory } ) );
         } );
-      }
-    }
+      },
+      completed: () => {
+        history.push( tempHistory );
+        tempHistory = [];
+      },
+    };
+    const fn = msgTypeLookup[parsedData.type];
+    if ( fn ) fn( parsedData );
   } );
 } );
 
