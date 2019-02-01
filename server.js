@@ -14,9 +14,11 @@ const wss = new SocketServer( {
 } );
 
 wss.on( 'connection', ( socket ) => {
+  socket.send( JSON.stringify( { type: 'grid' } ) );
+
   wss.clients.forEach( ( client ) => {
     for ( let i = 0; i < history.length; i += 1 ) {
-      client.send( JSON.stringify( history[i] ) );
+      client.send( JSON.stringify( { type: 'line', data: history[i] } ) );
     }
   } );
 
@@ -28,7 +30,7 @@ wss.on( 'connection', ( socket ) => {
     } else {
       tempHistory.push( parsedData );
       wss.clients.forEach( ( client ) => {
-        client.send( JSON.stringify( tempHistory ) );
+        client.send( JSON.stringify( { type: 'line', data: tempHistory } ) );
       } );
     }
   } );
