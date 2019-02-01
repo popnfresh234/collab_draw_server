@@ -2,7 +2,7 @@ const express = require( 'express' );
 const SocketServer = require( 'ws' ).Server;
 
 const PORT = process.env.PORT || 8080;
-const history = [];
+let history = [];
 let tempHistory = [];
 const server = express()
   // Make the express server serve static assets (html, javascript, css) from the /public folder
@@ -24,14 +24,22 @@ wss.on( 'connection', ( socket ) => {
 
   socket.on( 'message', ( data ) => {
     const parsedData = JSON.parse( data );
-    if ( parsedData.completed ) {
-      history.push( tempHistory );
-      tempHistory = [];
-    } else {
-      tempHistory.push( parsedData );
+    if ( parsedData.type === 'clear' ) {
+      history = [];
       wss.clients.forEach( ( client ) => {
-        client.send( JSON.stringify( { type: 'line', data: tempHistory } ) );
+        client.send( JSON.stringify( { type: 'clear' } ) );
       } );
+    }
+    if ( parsedData.type === 'line' ) {
+      if ( parsedData.data === 'completed' ) {
+        history.push( tempHistory );
+        tempHistory = [];
+      } else {
+        tempHistory.push( parsedData.data );
+        wss.clients.forEach( ( client ) => {
+          client.send( JSON.stringify( { type: 'line', data: tempHistory } ) );
+        } );
+      }
     }
   } );
 } );
